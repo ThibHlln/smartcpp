@@ -23,6 +23,11 @@ class Catchment{
         double s_v_h2o_ly4;
         double s_v_h2o_ly5;
         double s_v_h2o_ly6;
+        double pr_eff_rain_to_ove;
+        double pr_eff_rain_to_dra;
+        double pr_eff_rain_to_int;
+        double pr_eff_rain_to_sgw;
+        double pr_eff_rain_to_dgw;
         // class constructor
         Catchment(){
             out_aeva = 0.0;
@@ -42,6 +47,11 @@ class Catchment{
             s_v_h2o_ly4 = 0.0;
             s_v_h2o_ly5 = 0.0;
             s_v_h2o_ly6 = 0.0;
+            pr_eff_rain_to_ove = 0.0;
+            pr_eff_rain_to_dra = 0.0;
+            pr_eff_rain_to_int = 0.0;
+            pr_eff_rain_to_sgw = 0.0;
+            pr_eff_rain_to_dgw = 0.0;
         }
 };
 
@@ -65,6 +75,10 @@ static Catchment onestep_catchment(
         double c_s_v_h2o_ly1, double c_s_v_h2o_ly2, double c_s_v_h2o_ly3, double c_s_v_h2o_ly4, double c_s_v_h2o_ly5, double c_s_v_h2o_ly6){
 
     /*
+    Catchment Constants
+    _ area_m2                   catchment area [m2]
+    _ time_gap_min              time gap between two simulation time steps [minutes]
+
     Catchment model * c_ *
     _ Hydrology
     ___ Inputs * in_ *
@@ -92,6 +106,12 @@ static Catchment onestep_catchment(
     _____ c_s_v_h2o_ly4         volume of water in fourth soil layer store [m3]
     _____ c_s_v_h2o_ly5         volume of water in fifth soil layer store [m3]
     _____ c_s_v_h2o_ly6         volume of water in sixth soil layer store [m3]
+    ___ Processes * pr_ *
+    _____ c_pr_eff_rain_to_ove  effective rainfall converted into overland flow runoff [mm]
+    _____ c_pr_eff_rain_to_dra  effective rainfall converted into to drain flow runoff [mm]
+    _____ c_pr_eff_rain_to_int  effective rainfall converted into to interflow runoff [mm]
+    _____ c_pr_eff_rain_to_sgw  effective rainfall converted into to shallow groundwater flow runoff [mm]
+    _____ c_pr_eff_rain_to_dgw  effective rainfall converted into to deep groundwater flow runoff [mm]
     ___ Outputs * out_ *
     _____ c_out_aeva            actual evapotranspiration [m3/s]
     _____ c_out_q_h2o_ove       overland flow [m3/s]
@@ -144,8 +164,8 @@ static Catchment onestep_catchment(
     double excess_rain = rain - c_in_peva;
     // initialise actual evapotranspiration variable
     double aeva = 0.0;
-    // initialise runoff pathways
-    double overland_flow, drain_flow, inter_flow, shallow_flow, deep_flow;
+    // initialise effective rainfall to runoff pathways
+    double c_pr_eff_rain_to_ove, c_pr_eff_rain_to_dra, c_pr_eff_rain_to_int, c_pr_eff_rain_to_sgw, c_pr_eff_rain_to_dgw;
 
     if (excess_rain >= 0.0) {  // excess rainfall available for runoff and infiltration
         // actual evapotranspiration = potential evapotranspiration
@@ -153,8 +173,8 @@ static Catchment onestep_catchment(
 
         // calculate surface runoff using quick runoff parameter H and relative soil moisture content
         double h_prime = c_p_h * (lvl_total_start / c_p_z);
-        overland_flow = h_prime * excess_rain;  // excess rainfall contribution to quick surface runoff store
-        excess_rain -= overland_flow;  // remainder that infiltrates
+        c_pr_eff_rain_to_ove = h_prime * excess_rain;  // excess rainfall contribution to quick surface runoff store
+        excess_rain -= c_pr_eff_rain_to_ove;  // remainder that infiltrates
 
         // calculate percolation through soil layers (from top layer [1] to bottom layer [6])
         for (int i = 1; i <= 6; i++) {
@@ -169,8 +189,8 @@ static Catchment onestep_catchment(
         }
 
         // calculate saturation excess from remaining excess rainfall after filling layers (if not 0)
-        drain_flow = c_p_d * excess_rain;  // sat. excess contribution (if not 0) to quick interflow runoff store
-        inter_flow = (1.0 - c_p_d) * excess_rain;  // sat. excess contribution (if not 0) to slow interflow runoff store
+        c_pr_eff_rain_to_dra = c_p_d * excess_rain;  // sat. excess contribution (if not 0) to quick interflow runoff store
+        c_pr_eff_rain_to_int = (1.0 - c_p_d) * excess_rain;  // sat. excess contribution (if not 0) to slow interflow runoff store
 
         // calculate leak from soil layers (i.e. piston flow becoming active during rainfall events)
         double s_prime = c_p_s * (lvl_total_start / c_p_z);
@@ -178,34 +198,34 @@ static Catchment onestep_catchment(
         for (int i = 1; i <= 6; i++) {  // soil moisture outflow reducing exponentially downwards
             double leak_interflow = list_lvl_lyr[i] * pow(s_prime, i);
             if (leak_interflow < list_lvl_lyr[i]) {
-                inter_flow += leak_interflow;  // soil moisture outflow contribution to slow interflow runoff store
+                c_pr_eff_rain_to_int += leak_interflow;  // soil moisture outflow contribution to slow interflow runoff store
                 list_lvl_lyr[i] -= leak_interflow;
             }
         }
         // leak to shallow groundwater flow
-        shallow_flow = 0.0;
+        c_pr_eff_rain_to_sgw = 0.0;
         for (int i = 1; i <= 6; i++) {  // soil moisture outflow reducing linearly downwards
             double leak_shallow_flow = list_lvl_lyr[i] * (s_prime / i);
             if (leak_shallow_flow < list_lvl_lyr[i]) {
-                shallow_flow += leak_shallow_flow;  // soil moisture outflow contribution to slow shallow GW runoff store
+                c_pr_eff_rain_to_sgw += leak_shallow_flow;  // soil moisture outflow contribution to slow shallow GW runoff store
                 list_lvl_lyr[i] -= leak_shallow_flow;
             }
         }
         // leak to deep groundwater flow
-        deep_flow = 0.0;
+        c_pr_eff_rain_to_dgw = 0.0;
         for (int i = 1; i <= 6; i++) {  // soil moisture outflow reducing exponentially upwards
             double leak_deep_flow = list_lvl_lyr[i] * pow(s_prime, 7 - i);
             if (leak_deep_flow < list_lvl_lyr[i]) {
-                deep_flow += leak_deep_flow;  // soil moisture outflow contribution to slow deep GW runoff store
+                c_pr_eff_rain_to_dgw += leak_deep_flow;  // soil moisture outflow contribution to slow deep GW runoff store
                 list_lvl_lyr[i] -= leak_deep_flow;
             }
         }
     } else {  // no excess rainfall (i.e. potential evapotranspiration not satisfied by available rainfall)
-        overland_flow = 0.0;  // no soil moisture contribution to quick overland flow runoff store
-        drain_flow = 0.0;  // no soil moisture contribution to quick drain flow runoff store
-        inter_flow = 0.0;  // no soil moisture contribution to quick + leak interflow runoff store
-        shallow_flow = 0.0;  // no soil moisture contribution to shallow groundwater flow runoff store
-        deep_flow = 0.0;  // no soil moisture contribution to deep groundwater flow runoff store
+        c_pr_eff_rain_to_ove = 0.0;  // no effective rainfall contribution to quick overland flow runoff store
+        c_pr_eff_rain_to_dra = 0.0;  // no effective rainfall contribution to quick drain flow runoff store
+        c_pr_eff_rain_to_int = 0.0;  // no effective rainfall contribution to quick + leak interflow runoff store
+        c_pr_eff_rain_to_sgw = 0.0;  // no effective rainfall contribution to shallow groundwater flow runoff store
+        c_pr_eff_rain_to_dgw = 0.0;  // no effective rainfall contribution to deep groundwater flow runoff store
 
         double deficit_rain = excess_rain * (-1.0);  // excess is negative => excess is actually a deficit
         aeva += rain;
@@ -231,27 +251,27 @@ static Catchment onestep_catchment(
 
     // route overland flow (quick surface runoff)
     c.out_q_h2o_ove = c_s_v_h2o_ove / c_p_sk;  // [m3/s]
-    c.s_v_h2o_ove = c_s_v_h2o_ove + (overland_flow / 1e3 * area_m2) - (c.out_q_h2o_ove * time_delta_sec);  // [m3] - [m3]
+    c.s_v_h2o_ove = c_s_v_h2o_ove + (c_pr_eff_rain_to_ove / 1e3 * area_m2) - (c.out_q_h2o_ove * time_delta_sec);  // [m3] - [m3]
     if (c.s_v_h2o_ove < 0.0)
         c.s_v_h2o_ove = 0.0;
     // route drain flow (quick interflow runoff)
     c.out_q_h2o_dra = c_s_v_h2o_dra / c_p_sk;  // [m3/s]
-    c.s_v_h2o_dra = c_s_v_h2o_dra + (drain_flow / 1e3 * area_m2) - (c.out_q_h2o_dra * time_delta_sec);  // [m3] - [m3]
+    c.s_v_h2o_dra = c_s_v_h2o_dra + (c_pr_eff_rain_to_dra / 1e3 * area_m2) - (c.out_q_h2o_dra * time_delta_sec);  // [m3] - [m3]
     if (c.s_v_h2o_dra < 0.0)
         c.s_v_h2o_dra = 0.0;
     // route interflow (slow interflow runoff)
     c.out_q_h2o_int = c_s_v_h2o_int / c_p_fk;  // [m3/s]
-    c.s_v_h2o_int = c_s_v_h2o_int + (inter_flow / 1e3 * area_m2) - (c.out_q_h2o_int * time_delta_sec);  // [m3] - [m3]
+    c.s_v_h2o_int = c_s_v_h2o_int + (c_pr_eff_rain_to_int / 1e3 * area_m2) - (c.out_q_h2o_int * time_delta_sec);  // [m3] - [m3]
     if (c.s_v_h2o_int < 0.0)
         c.s_v_h2o_int = 0.0;
     // route shallow groundwater flow (slow shallow GW runoff)
     c.out_q_h2o_sgw = c_s_v_h2o_sgw / c_p_gk;  // [m3/s]
-    c.s_v_h2o_sgw = c_s_v_h2o_sgw + (shallow_flow / 1e3 * area_m2) - (c.out_q_h2o_sgw * time_delta_sec);  // [m3] - [m3]
+    c.s_v_h2o_sgw = c_s_v_h2o_sgw + (c_pr_eff_rain_to_sgw / 1e3 * area_m2) - (c.out_q_h2o_sgw * time_delta_sec);  // [m3] - [m3]
     if (c.s_v_h2o_sgw < 0.0)
         c.s_v_h2o_sgw = 0.0;
     // route deep groundwater flow (slow deep GW runoff)
     c.out_q_h2o_dgw = c_s_v_h2o_dgw / c_p_gk;  // [m3/s]
-    c.s_v_h2o_dgw = c_s_v_h2o_dgw + (deep_flow / 1e3 * area_m2) - (c.out_q_h2o_dgw * time_delta_sec);  // [m3] - [m3]
+    c.s_v_h2o_dgw = c_s_v_h2o_dgw + (c_pr_eff_rain_to_dgw / 1e3 * area_m2) - (c.out_q_h2o_dgw * time_delta_sec);  // [m3] - [m3]
     if (c.s_v_h2o_dgw < 0.0)
         c.s_v_h2o_dgw = 0.0;
 
@@ -262,6 +282,13 @@ static Catchment onestep_catchment(
     c.s_v_h2o_ly4 = list_lvl_lyr[4] / 1000 * area_m2;
     c.s_v_h2o_ly5 = list_lvl_lyr[5] / 1000 * area_m2;
     c.s_v_h2o_ly6 = list_lvl_lyr[6] / 1000 * area_m2;
+
+    // store internal process variables
+    c.pr_eff_rain_to_ove = c_pr_eff_rain_to_ove;
+    c.pr_eff_rain_to_dra = c_pr_eff_rain_to_dra;
+    c.pr_eff_rain_to_int = c_pr_eff_rain_to_int;
+    c.pr_eff_rain_to_sgw = c_pr_eff_rain_to_sgw;
+    c.pr_eff_rain_to_dgw = c_pr_eff_rain_to_dgw;
 
     return c;
 }
@@ -349,14 +376,80 @@ static PyObject *SMARTc_onestep( PyObject *self, PyObject *args ) {
                          r.s_v_riv);
 }
 
+
+static PyObject *SMARTc_onestep_c( PyObject *self, PyObject *args ) {
+    double area_m2, time_delta_sec; // constants
+    double c_in_rain, c_in_peva;  // inputs
+    double c_p_t, c_p_c, c_p_h, c_p_d, c_p_s, c_p_z, c_p_sk, c_p_fk, c_p_gk;  // parameters
+    double c_s_v_h2o_ove, c_s_v_h2o_dra, c_s_v_h2o_int, c_s_v_h2o_sgw, c_s_v_h2o_dgw, c_s_v_h2o_ly1, c_s_v_h2o_ly2, c_s_v_h2o_ly3, c_s_v_h2o_ly4, c_s_v_h2o_ly5, c_s_v_h2o_ly6;  // states
+
+    if (!PyArg_ParseTuple(args, "dddddddddddddddddddddddd",
+                          &area_m2, &time_delta_sec, &c_in_rain, &c_in_peva,
+                          &c_p_t, &c_p_c, &c_p_h, &c_p_d, &c_p_s, &c_p_z, &c_p_sk, &c_p_fk, &c_p_gk,
+                          &c_s_v_h2o_ove, &c_s_v_h2o_dra, &c_s_v_h2o_int, &c_s_v_h2o_sgw, &c_s_v_h2o_dgw, &c_s_v_h2o_ly1, &c_s_v_h2o_ly2, &c_s_v_h2o_ly3, &c_s_v_h2o_ly4, &c_s_v_h2o_ly5, &c_s_v_h2o_ly6)) {
+        return NULL;
+    }
+
+    /* Calculations for the catchment runoff */
+    Catchment c;
+
+    c = onestep_catchment(
+            area_m2, time_delta_sec, c_in_rain, c_in_peva,
+            c_p_t, c_p_c, c_p_h, c_p_d, c_p_s, c_p_z, c_p_sk, c_p_fk, c_p_gk,
+            c_s_v_h2o_ove, c_s_v_h2o_dra, c_s_v_h2o_int, c_s_v_h2o_sgw, c_s_v_h2o_dgw, c_s_v_h2o_ly1, c_s_v_h2o_ly2, c_s_v_h2o_ly3, c_s_v_h2o_ly4, c_s_v_h2o_ly5, c_s_v_h2o_ly6);
+
+    return Py_BuildValue("dddddddddddddddddddddd",
+                         c.out_aeva, c.out_q_h2o_ove, c.out_q_h2o_dra, c.out_q_h2o_int, c.out_q_h2o_sgw, c.out_q_h2o_dgw,
+                         c.s_v_h2o_ove, c.s_v_h2o_dra, c.s_v_h2o_int, c.s_v_h2o_sgw, c.s_v_h2o_dgw,
+                         c.s_v_h2o_ly1, c.s_v_h2o_ly2, c.s_v_h2o_ly3, c.s_v_h2o_ly4, c.s_v_h2o_ly5, c.s_v_h2o_ly6,
+                         c.pr_eff_rain_to_ove, c.pr_eff_rain_to_dra, c.pr_eff_rain_to_int,
+                         c.pr_eff_rain_to_sgw, c.pr_eff_rain_to_dgw);
+}
+
+
+static PyObject *SMARTc_onestep_r( PyObject *self, PyObject *args ) {
+    double time_delta_sec; // constants
+    double r_in_q_riv;  // inputs
+    double r_p_rk;  // parameters
+    double r_s_v_riv;  // states
+
+    if (!PyArg_ParseTuple(args, "dddd",
+                          &time_delta_sec, &r_in_q_riv,
+                          &r_p_rk,
+                          &r_s_v_riv)) {
+        return NULL;
+    }
+
+    /* Calculations for the river routing */
+    River r;
+
+    r = onestep_river(
+            time_delta_sec,
+            r_in_q_riv,
+            r_p_rk,
+            r_s_v_riv);
+
+    return Py_BuildValue("dd",
+                         r.out_q_riv,
+                         r.s_v_riv);
+}
+
 static char SMARTc_docstring[] =
-        "This module provides access to the Rainfall-Runoff Model SMART.\n";
+        "This module provides access to the Rainfall-Runoff Model SMART (calculations for one time step only).\n";
 
 static char onestep_docstring[] =
-        "Calculates SMART variables for one time step.\n";
+        "Calculates SMART variables for one time step (Catchment Runoff + River Routing).\n";
+
+static char onestep_c_docstring[] =
+        "Calculates SMART variables for one time step (Catchment Runoff only).\n";
+
+static char onestep_r_docstring[] =
+        "Calculates SMART variables for one time step (River Routing only).\n";
 
 static PyMethodDef SMARTc_methods[] = {
         { "onestep", SMARTc_onestep, METH_VARARGS, onestep_docstring },
+        { "onestep_c", SMARTc_onestep_c, METH_VARARGS, onestep_c_docstring },
+        { "onestep_r", SMARTc_onestep_r, METH_VARARGS, onestep_r_docstring },
         { NULL, NULL, 0, NULL }
 };
 
