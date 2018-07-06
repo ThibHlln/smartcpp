@@ -1,3 +1,24 @@
+// -*- coding: utf-8 -*-
+
+// This file is part of SMARTcpp - An open-source C++ extension of the SMART model in Python
+// Copyright (C) 2018  Thibault Hallouin (1), Eva Mockler (1,2), Michael Bruen (1)
+//
+// (1) Dooge Centre for Water Resources Research, University College Dublin, Ireland
+// (2) Environmental Protection Agency, Ireland
+//
+// SMARTcpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// SMARTcpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with SMARTcpp. If not, see <http://www.gnu.org/licenses/>.
+
 #include <Python.h>
 
 #include <iostream>
@@ -339,7 +360,7 @@ static River onestep_river(
 }
 
 
-static PyObject *SMARTc_onestep( PyObject *self, PyObject *args ) {
+static PyObject *smartcpp_onestep(PyObject *self, PyObject *args) {
     double area_m2, time_delta_sec; // constants
     double c_in_rain, c_in_peva;  // inputs
     double c_p_t, c_p_c, c_p_h, c_p_d, c_p_s, c_p_z, c_p_sk, c_p_fk, c_p_gk, r_p_rk;  // parameters
@@ -377,7 +398,7 @@ static PyObject *SMARTc_onestep( PyObject *self, PyObject *args ) {
 }
 
 
-static PyObject *SMARTc_onestep_c( PyObject *self, PyObject *args ) {
+static PyObject *smartcpp_onestep_c(PyObject *self, PyObject *args) {
     double area_m2, time_delta_sec; // constants
     double c_in_rain, c_in_peva;  // inputs
     double c_p_t, c_p_c, c_p_h, c_p_d, c_p_s, c_p_z, c_p_sk, c_p_fk, c_p_gk;  // parameters
@@ -407,7 +428,7 @@ static PyObject *SMARTc_onestep_c( PyObject *self, PyObject *args ) {
 }
 
 
-static PyObject *SMARTc_onestep_r( PyObject *self, PyObject *args ) {
+static PyObject *smartcpp_onestep_r(PyObject *self, PyObject *args) {
     double time_delta_sec; // constants
     double r_in_q_riv;  // inputs
     double r_p_rk;  // parameters
@@ -434,7 +455,7 @@ static PyObject *SMARTc_onestep_r( PyObject *self, PyObject *args ) {
                          r.s_v_riv);
 }
 
-static char SMARTc_docstring[] =
+static char smartcpp_docstring[] =
         "This module provides access to the Rainfall-Runoff Model SMART (calculations for one time step only).\n";
 
 static char onestep_docstring[] =
@@ -447,12 +468,12 @@ static char onestep_r_docstring[] =
         "Calculates SMART variables for one time step (River Routing only).\n";
 
 static PyMethodDef SMARTc_methods[] = {
-        { "onestep", SMARTc_onestep, METH_VARARGS, onestep_docstring },
-        { "onestep_c", SMARTc_onestep_c, METH_VARARGS, onestep_c_docstring },
-        { "onestep_r", SMARTc_onestep_r, METH_VARARGS, onestep_r_docstring },
+        { "onestep", smartcpp_onestep, METH_VARARGS, onestep_docstring },
+        { "onestep_c", smartcpp_onestep_c, METH_VARARGS, onestep_c_docstring },
+        { "onestep_r", smartcpp_onestep_r, METH_VARARGS, onestep_r_docstring },
         { NULL, NULL, 0, NULL }
 };
 
-PyMODINIT_FUNC initSMARTc(void) {
-    Py_InitModule3( "SMARTc", SMARTc_methods, SMARTc_docstring );
+PyMODINIT_FUNC initsmartcpp(void) {
+    Py_InitModule3( "smartcpp", SMARTc_methods, smartcpp_docstring );
 }

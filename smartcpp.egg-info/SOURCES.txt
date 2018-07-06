@@ -1,0 +1,7 @@
+README.md
+setup.py
+smartcpp/smartcpp.cpp
+smartcpp.egg-info/PKG-INFO
+smartcpp.egg-info/SOURCES.txt
+smartcpp.egg-info/dependency_links.txt
+smartcpp.egg-info/top_level.txt
