@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2018  Thibault Hallouin
-from setuptools import setup, Extension
+from setuptools import Extension
+from skbuild import setup
 
 
 with open("README.md", "r") as fh:
