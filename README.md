@@ -1,3 +1,6 @@
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![PyPI Version](https://badge.fury.io/py/smartcpp.svg)](https://pypi.python.org/pypi/smartcpp)
+
 # SMARTcpp - a C++ extension of the rainfall-runoff SMART for Python
 
 SMARTcpp is an open-source C++ extension for the hydrological catchment model SMART in Python. It is licensed under GNU GPL-3.0 (see [licence file](LICENCE.md) provided). SMART is a top-down rainfall-runoff model composed of a soil moisture accounting component and a routing component. It requires rainfall and potential evapotranspiration time series, it features a set of ten parameters, and it yields a discharge time series. This C++ extension is giving access to the calculation of the states, processes, and outputs of the model for one simulation time-step. It is intended to be used in combination with a wrapping script in Python, where the loop through the simulation time series is defined.
