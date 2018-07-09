@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2018  Thibault Hallouin
-from setuptools import Extension
-from skbuild import setup
+from setuptools import setup, Extension
 
 
 with open("README.md", "r") as fh:
     long_desc = fh.read()
 
 setup(
-    name = 'smartcpp',
+    name='smartcpp',
 
-    version = '0.1.0',
+    version='0.1.0',
 
     description='SMARTcpp: a C++ extension of the rainfall-runoff SMART for Python',
     long_description=long_desc,
@@ -45,7 +44,7 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython'
     ],
 
-    python_requires='>=2.7',
+    ext_modules=[Extension('smartcpp', ['smartcpp/smartcpp.cpp'])],
 
-    ext_modules=[Extension('smartcpp', ['smartcpp/smartcpp.cpp'])]
+    python_requires='>=2.7'
 )
