@@ -15,7 +15,7 @@ setup(
     long_description=long_desc,
     long_description_content_type="text/markdown",
 
-    url='https://github.com/ThibHlln/torrentpy',
+    url='https://github.com/ThibHlln/smartcpp',
 
     author='Thibault Hallouin, Michael Bruen, and Eva Mockler',
     author_email='thibault.hallouin@ucdconnect.ie',
