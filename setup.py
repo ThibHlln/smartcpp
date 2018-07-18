@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
 setup(
     name='smartcpp',
 
-    version='0.1.1',
+    version='0.1.2',
 
     description='SMARTcpp: a C++ extension of the rainfall-runoff SMART for Python',
     long_description=long_desc,

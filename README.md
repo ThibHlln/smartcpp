@@ -43,8 +43,10 @@ Alternatively, you can download the source code (*i.e.* this repository) and use
 
 ## Version History
 
-* 0.1.1 [18 Jul 2018]: Version with proper PyPI display
+* 0.1.2 [18 Jul 2018]: Version with proper PyPI display
 	* Fixes display issue of README.md on PyPI
+* 0.1.1 [18 Jul 2018]: Version with Python 3.x compatibility
+	* Adds compatibility with Python 3.x extensions
 * 0.1.0 [09 Jul 2018]: First version of SMARTcpp
 
 ## Acknowledgment
