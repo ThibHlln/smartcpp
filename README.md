@@ -7,6 +7,16 @@ SMARTcpp is an open-source C++ extension for the hydrological catchment model SM
 
 Mockler, E., O’Loughlin, F., and Bruen, M.: Understanding hydrological flow paths in conceptual catchment models using uncertainty and sensitivity analysis, *Computers & Geosciences*, 90, 66–77,[doi:10.1016/j.cageo.2015.08.015](https://dx.doi.org/10.1016/j.cageo.2015.08.015), 2016
 
+## How to Install
+
+SMARTcpp is available on PyPI for Python 2.7 and Python 3.6 (both for macOS and Windows), so you can simply use pip:
+
+    python -m pip install smartcpp
+
+Alternatively, you can download the source code (*i.e.* this repository) and use the command:
+
+    python setup.py install
+
 ## Model Specifications
 
 ### Model Inputs
@@ -33,6 +43,8 @@ Mockler, E., O’Loughlin, F., and Bruen, M.: Understanding hydrological flow pa
 
 ## Version History
 
+* 0.1.1 [18 Jul 2018]: Version with proper PyPI display
+	* Fixes display issue of README.md on PyPI
 * 0.1.0 [09 Jul 2018]: First version of SMARTcpp
 
 ## Acknowledgment
