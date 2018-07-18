@@ -467,13 +467,33 @@ static char onestep_c_docstring[] =
 static char onestep_r_docstring[] =
         "Calculates SMART variables for one time step (River Routing only).\n";
 
-static PyMethodDef SMARTc_methods[] = {
+static PyMethodDef smartcpp_methods[] = {
         { "onestep", smartcpp_onestep, METH_VARARGS, onestep_docstring },
         { "onestep_c", smartcpp_onestep_c, METH_VARARGS, onestep_c_docstring },
         { "onestep_r", smartcpp_onestep_r, METH_VARARGS, onestep_r_docstring },
         { NULL, NULL, 0, NULL }
 };
 
+// For Python 2.x
+#if PY_MAJOR_VERSION < 3
 PyMODINIT_FUNC initsmartcpp(void) {
-    Py_InitModule3( "smartcpp", SMARTc_methods, smartcpp_docstring );
+    Py_InitModule3( "smartcpp", smartcpp_methods, smartcpp_docstring );
 }
+#endif
+
+// For Python 3.x
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef smartcpp =
+        {
+                PyModuleDef_HEAD_INIT,
+                "smartcpp", /* name of module */
+                smartcpp_docstring,          /* module documentation, may be NULL */
+                -1,          /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
+                smartcpp_methods
+        };
+
+PyMODINIT_FUNC PyInit_smartcpp(void)
+{
+    return PyModule_Create(&smartcpp);
+}
+#endif
