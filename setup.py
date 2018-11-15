@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) 2018  Thibault Hallouin
 from setuptools import setup, Extension
+import numpy
 
 
 with open("README.md", "r") as fh:
     long_desc = fh.read()
 
+with open('smartcpp/version.py') as fv:
+    exec(fv.read())
+
 setup(
     name='smartcpp',
 
-    version='0.1.2',
+    version=__version__,
 
     description='SMARTcpp: a C++ extension of the rainfall-runoff SMART for Python',
     long_description=long_desc,
@@ -44,7 +48,10 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython'
     ],
 
-    ext_modules=[Extension('smartcpp', ['smartcpp/smartcpp.cpp'])],
+    packages=['smartcpp'],
+
+    ext_modules=[Extension('smartcpp', ['smartcpp/smartcpp.cpp'],
+                           include_dirs=[numpy.get_include()])],
 
     python_requires='>=2.7'
 )

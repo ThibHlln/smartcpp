@@ -20,6 +20,7 @@
 // along with SMARTcpp. If not, see <http://www.gnu.org/licenses/>.
 
 #include <Python.h>
+#include <numpy/arrayobject.h>
 
 #include <iostream>
 #include <cmath>
@@ -360,6 +361,144 @@ static River onestep_river(
 }
 
 
+static PyObject *smartcpp_allsteps(PyObject *self, PyObject *args) {
+    /* interface variables */
+    double area_m2, time_delta_sec;  // constants
+    int simu_length; // constants
+    PyArrayObject *nd_rain, *nd_peva;  // inputs
+    PyArrayObject *nd_parameters;  // model parameters
+    PyArrayObject *nd_initial;  // initial conditions
+    PyArrayObject *nd_discharge, *nd_history;  // outputs
+    double groundwater_component;  // outputs
+    int report_type, report_gap;  // reporting information
+
+    /* internal variables */
+    npy_intp dim_q[1], dim_h[1];  // arrays for the lengths of the dimensions of the discharge and history arrays
+    int marker;  // a marker to know when a reporting step has been reached
+    int counter;  // a counter to know which index of the discharge time series to save at
+    double riv, gw_ro, all_ro;  // tallies for calculation of discharge and groundwater contribution
+
+    /* Parse the arguments coming from the Python function call */
+    if (!PyArg_ParseTuple(args, "ddiO!O!O!O!ii",
+                          &area_m2, &time_delta_sec, &simu_length,
+                          &PyArray_Type, &nd_rain, &PyArray_Type, &nd_peva,
+                          &PyArray_Type, &nd_parameters, &PyArray_Type, &nd_initial,
+                          &report_type, &report_gap)) {
+        return NULL;
+    }
+
+    /* Create C arrays with the same dimensions as numpy arrays */
+    int dim = simu_length / report_gap;
+    double *arr_discharge = new double[dim];
+    double arr_history[19];
+    double arr_parameters[10];
+
+    /* Get initial conditions and model parameter values in C arrays */
+    for (int i = 0; i < 19; i++)
+    {
+        arr_history[i] = *(double *)PyArray_GETPTR1(nd_initial, i);
+    }
+    for (int i = 0; i < 10; i++)
+    {
+        arr_parameters[i] = *(double *)PyArray_GETPTR1(nd_parameters, i);
+    }
+
+    /* Loop through the data set and call the one step functions */
+    Catchment c;
+    River r;
+    marker = 1;  // initialise the marker
+    counter = 0;  // initialise the counter
+    riv = 0.0;  // initialise tally for river flow
+    gw_ro = 0.0;  // initialise tally for groundwater runoff
+    all_ro = 0.0;  // initialise tally for total runoff
+
+    for (int i = 1; i <= simu_length; i++)
+    {
+        /* Run the catchment model for one time step */
+        c = onestep_catchment(
+                area_m2, time_delta_sec,
+                *(double *)PyArray_GETPTR1(nd_rain, i - 1),
+                *(double *)PyArray_GETPTR1(nd_peva, i - 1),
+                arr_parameters[0], arr_parameters[1], arr_parameters[2], arr_parameters[3], arr_parameters[4],
+                arr_parameters[5], arr_parameters[6], arr_parameters[7], arr_parameters[8],
+                arr_history[7], arr_history[8], arr_history[9], arr_history[10],
+                arr_history[11], arr_history[12], arr_history[13], arr_history[14],
+                arr_history[15], arr_history[16], arr_history[17]);
+
+        /* Run the river model for one time step */
+        r = onestep_river(
+                time_delta_sec,
+                c.out_q_h2o_ove + c.out_q_h2o_dra + c.out_q_h2o_int + c.out_q_h2o_sgw + c.out_q_h2o_dgw,
+                arr_parameters[9],
+                arr_history[18]);
+
+        /* Store the current time step state values for next time step */
+        arr_history[7] = c.s_v_h2o_ove;
+        arr_history[8] = c.s_v_h2o_dra;
+        arr_history[9] = c.s_v_h2o_int;
+        arr_history[10] = c.s_v_h2o_sgw;
+        arr_history[11] = c.s_v_h2o_dgw;
+        arr_history[12] = c.s_v_h2o_ly1;
+        arr_history[13] = c.s_v_h2o_ly2;
+        arr_history[14] = c.s_v_h2o_ly3;
+        arr_history[15] = c.s_v_h2o_ly4;
+        arr_history[16] = c.s_v_h2o_ly5;
+        arr_history[17] = c.s_v_h2o_ly6;
+        arr_history[18] = r.s_v_riv;
+
+        /* Save the necessary output values in C arrays */
+        if (report_type == 1)  // summary of the simulation steps included in one reporting step
+        {
+            if (marker == report_gap)  // reached a reporting step
+            {
+                riv += r.out_q_riv;
+                gw_ro += c.out_q_h2o_sgw + c.out_q_h2o_dgw;
+                all_ro += c.out_q_h2o_ove + c.out_q_h2o_dra + c.out_q_h2o_int + c.out_q_h2o_sgw + c.out_q_h2o_dgw;
+                arr_discharge[counter] = riv / report_gap;
+                riv = 0;
+                marker = 0;
+                counter++;
+            }
+            else  // between two reporting steps
+            {
+                riv += r.out_q_riv;
+                gw_ro += (c.out_q_h2o_sgw + c.out_q_h2o_dgw);
+                all_ro += (c.out_q_h2o_ove + c.out_q_h2o_dra + c.out_q_h2o_int + c.out_q_h2o_sgw + c.out_q_h2o_dgw);
+            }
+        }
+        else  // raw extraction of the value at the corresponding to the reporting step
+        {
+            if (marker == report_gap)  // reached a reporting step
+            {
+                arr_discharge[counter] = r.out_q_riv;
+                gw_ro += (c.out_q_h2o_sgw + c.out_q_h2o_dgw);
+                all_ro += (c.out_q_h2o_ove + c.out_q_h2o_dra + c.out_q_h2o_int + c.out_q_h2o_sgw + c.out_q_h2o_dgw);
+                marker = 0;
+                counter++;
+            }
+            // else // do nothing, no reporting required
+        }
+
+        marker++;
+    }
+
+    groundwater_component = gw_ro / all_ro;
+
+    /* Convert C arrays for discharge and storage to a numpy arrays */
+    dim_q[0] = simu_length / report_gap;
+    nd_discharge = (PyArrayObject *) PyArray_SimpleNewFromData(1, dim_q, NPY_DOUBLE, arr_discharge);
+    dim_h[0] = 19;
+    nd_history = (PyArrayObject *) PyArray_SimpleNewFromData(1, dim_h, NPY_DOUBLE, arr_history);
+
+    /* Return a tuple containing the discharge time series, the groundwater component, and the outputs+states history */
+    PyObject *tuple_result = PyTuple_New(3);
+    PyTuple_SetItem(tuple_result, 0, PyArray_Return(nd_discharge));
+    PyTuple_SetItem(tuple_result, 1, Py_BuildValue("d", groundwater_component));
+    PyTuple_SetItem(tuple_result, 2, PyArray_Return(nd_history));
+    return tuple_result;
+}
+
+
 static PyObject *smartcpp_onestep(PyObject *self, PyObject *args) {
     double area_m2, time_delta_sec; // constants
     double c_in_rain, c_in_peva;  // inputs
@@ -456,7 +595,10 @@ static PyObject *smartcpp_onestep_r(PyObject *self, PyObject *args) {
 }
 
 static char smartcpp_docstring[] =
-        "This module provides access to the Rainfall-Runoff Model SMART (calculations for one time step only).\n";
+        "This module provides access to the Rainfall-Runoff Model SMART.\n";
+
+static char allsteps_docstring[] =
+        "Calculates SMART discharge and groundwater component for all time steps.\n";
 
 static char onestep_docstring[] =
         "Calculates SMART variables for one time step (Catchment Runoff + River Routing).\n";
@@ -468,6 +610,7 @@ static char onestep_r_docstring[] =
         "Calculates SMART variables for one time step (River Routing only).\n";
 
 static PyMethodDef smartcpp_methods[] = {
+        { "allsteps", smartcpp_allsteps, METH_VARARGS, allsteps_docstring },
         { "onestep", smartcpp_onestep, METH_VARARGS, onestep_docstring },
         { "onestep_c", smartcpp_onestep_c, METH_VARARGS, onestep_c_docstring },
         { "onestep_r", smartcpp_onestep_r, METH_VARARGS, onestep_r_docstring },
@@ -477,6 +620,7 @@ static PyMethodDef smartcpp_methods[] = {
 // For Python 2.x
 #if PY_MAJOR_VERSION < 3
 PyMODINIT_FUNC initsmartcpp(void) {
+    import_array();
     Py_InitModule3( "smartcpp", smartcpp_methods, smartcpp_docstring );
 }
 #endif
@@ -494,6 +638,7 @@ static struct PyModuleDef smartcpp =
 
 PyMODINIT_FUNC PyInit_smartcpp(void)
 {
+    import_array();
     return PyModule_Create(&smartcpp);
 }
 #endif

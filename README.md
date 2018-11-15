@@ -4,11 +4,11 @@
 
 # SMARTcpp - a C++ accelerator extension of the rainfall-runoff SMART for Python
 
-SMARTcpp is an open-source C++ accelerator extension for the hydrological catchment model SMART in Python. It is licensed under GNU GPL-3.0 (see [licence file](https://github.com/ThibHlln/smartcpp/blob/master/LICENCE.md) provided). SMART (Soil Moisture Accounting and Routing for Transport) is a top-down rainfall-runoff model composed of a soil moisture accounting component and a linear routing component. It requires rainfall and potential evapotranspiration time series, it features a set of ten parameters, and it yields a discharge time series. This C++ extension is giving access to the calculation of the states, processes, and outputs of the model for one simulation time-step. SMARTcpp is intended to be used in combination with a wrapping script in Python, where the loop through the simulation time series is defined.
+SMARTcpp is an open-source C++ accelerator extension for the hydrological catchment model SMART in Python. It is licensed under GNU GPL-3.0 (see [licence file](https://github.com/ThibHlln/smartcpp/blob/master/LICENCE.md) provided). SMART (Soil Moisture Accounting and Routing for Transport) is a top-down rainfall-runoff model composed of a soil moisture accounting component and a linear routing component. It requires rainfall and potential evapotranspiration time series, it features a set of ten parameters, and it yields a discharge time series. This C++ extension is giving access to the calculation of the states, processes, and outputs of the model for one simulation time step or for all time steps. SMARTcpp is intended to be used in combination with a wrapping script in Python.
 
 ## How to Install
 
-SMARTcpp is available on PyPI for Python 2.7 and Python 3.6 (both for macOS and Windows), so you can simply use pip:
+SMARTcpp is available on PyPI for Python 2.7 and Python 3.6 (both for macOS and Windows 64 bits), so you can simply use pip:
 
     python -m pip install smartcpp
 
@@ -43,6 +43,7 @@ Alternatively, you can download the source code (*i.e.* the GitHub repository) a
 ### Model Outputs
 
 * discharge time series at catchment outlet [m<sup>3</sup>/s]
+* groundwater contribution to catchment runoff [-]
 
 ### References
 
@@ -50,6 +51,8 @@ Mockler, E., O’Loughlin, F., and Bruen, M.: Understanding hydrological flow pa
 
 ## Version History
 
+* 0.2.0 [15 Nov 2018]: Version capable of running all steps
+    * Adds method allsteps that brings the loop into C++
 * 0.1.2 [18 Jul 2018]: Version with proper PyPI display
 	* Fixes display issue of README.md on PyPI
 * 0.1.1 [18 Jul 2018]: Version with Python 3.x compatibility
