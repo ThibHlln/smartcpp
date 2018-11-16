@@ -4,11 +4,10 @@ from setuptools import setup, Extension
 import numpy
 
 
+__version__ = '0.2.0'
+
 with open("README.md", "r") as fh:
     long_desc = fh.read()
-
-with open('smartcpp/version.py') as fv:
-    exec(fv.read())
 
 setup(
     name='smartcpp',
@@ -48,10 +47,13 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython'
     ],
 
-    packages=['smartcpp'],
-
-    ext_modules=[Extension('smartcpp', ['smartcpp/smartcpp.cpp'],
+    ext_modules=[Extension('smartcpp',
+                           sources=['smartcpp/smartcpp.cpp'],
                            include_dirs=[numpy.get_include()])],
+
+    install_requires=[
+        'numpy'
+    ],
 
     python_requires='>=2.7'
 )
